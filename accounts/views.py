@@ -7,11 +7,16 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-from django.contrib.auth.views import LoginView as auth_login
+
+from django.contrib.auth import logout as django_logout
+from django.contrib.auth.views import LoginView
+
+
 from allauth.socialaccount.models import SocialApp
 from allauth.socialaccount.templatetags.socialaccount import get_providers
 from .forms import SignupForm, ProfileForm
 from .models import Profile, Relation
+
 
 
 def login(request):
@@ -24,10 +29,12 @@ def login(request):
         except SocialApp.DoesNotExist:
             provider.social_app = None
         providers.append(provider)
+    return render(request, 'accounts/login.html', {'providers': providers})
 
-    return auth_login(request,
-                      template_name='accounts/login.html',
-                      extra_context={'providers': providers})
+
+def logout(request):
+    django_logout(request)
+    return redirect("/")
 
 
 def signup(request):
