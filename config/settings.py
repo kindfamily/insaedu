@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.humanize',  # 세자리 숫자 마다 컴마찍어주는 기능
     'allauth',
     'allauth.account',
-    'imagekit',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.naver',
     'accounts',
     'post',
 ]
@@ -113,15 +114,29 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ko-kr'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
 USE_L10N = True
 
 USE_TZ = True
+
+
+AUTHENTICATION_BACKENDS = [
+    # Needed to login by username in Django admin, regardless of `allauth`
+    'django.contrib.auth.backends.ModelBackend',
+    # `allauth` specific authentication methods, such as login by e-mail
+    'allauth.account.auth_backends.AuthenticationBackend',  # 추가
+]
+
+SITE_ID = 1
+
+LOGIN_REDIRECT_URL = '/'
+
+
 
 
 # Static files (CSS, JavaScript, Images)
