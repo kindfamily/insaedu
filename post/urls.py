@@ -15,7 +15,7 @@ urlpatterns = [
     path('comment/new', comment_new, name='comment_new'),
     path('comment/delete', comment_delete, name='comment_delete'),
     path('comment/more', comment_more, name='comment_more'),
-    path('explore/tags', post_list, name='post_search'),
+    path('explore/tags/<tag>/', post_list, name='post_search'),
 
     # url(r'^$', views.post_list, name='post_list'),
     # url(r'^new/$', views.post_new, name='post_new'),

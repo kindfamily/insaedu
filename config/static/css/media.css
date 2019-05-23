@@ -1,6 +1,7 @@
-@media screen and (max-width: 890px) {
+@media screen and (max-width: 500px) {
   body{
     background-color: blue;
+    width:100%;
   }
 
   article.post-wrap{

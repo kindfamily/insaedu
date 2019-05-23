@@ -1,7 +1,18 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .models import Profile
+
+class LoginForm(AuthenticationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        class_update_fields = ['username', 'password']
+        for field_name in class_update_fields:
+            self.fields[field_name].widget.attrs.update({
+                'class': 'form-control'
+            })
+
+
 
 
 class SignupForm(UserCreationForm):
