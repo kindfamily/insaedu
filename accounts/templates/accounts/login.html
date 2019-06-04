@@ -9,12 +9,6 @@
 <div class="form-container">
   <div class="form">
     <h1 class="title">Instagram</h1>
-    {% if msg %}
-    <p>{{ msg }}</p>
-    {% else %}
-    hello
-    {% endif %}
-
     <form method="POST" action="{% url 'accounts:login' %}">
       {% csrf_token %}
 
