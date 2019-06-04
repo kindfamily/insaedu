@@ -33,10 +33,13 @@
   <![endif]-->
 </head>
 <body>
+
   <div class="container-fluid">
     <nav class="navbar navbar-default">
       <div class="nav-wrap">
         <a class="logo pull-left" href="/"></a>
+
+
         <form class="search-form" action="{% url "post:post_list" %}" method="post">
           {% csrf_token %}
           <input class="tag-search" type="text" name="tag" placeholder="검색" pattern="#?[\wㄱ-ㅎ|ㅏ-ㅣ|가-힣]+" title="특수문자, 공백 입력불가" required >
