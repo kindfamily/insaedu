@@ -10,32 +10,59 @@ from django.shortcuts import get_object_or_404, redirect, render
 from .models import Comment, Post, Like, Tag
 from .forms import CommentForm, PostForm
 
-
+# post의 전체 리스트를 보여주는 뷰
 def post_list(request, tag=None):
+    # annotate
+    # https://docs.djangoproject.com/en/1.9/ref/models/querysets/#annotate
+    # 모든 태그의 내용을 검색하는데 annotate 함수를 이용해서 기준을 묶어낸다
+    # num_post: post의 전체 숫자를 확인하고
+    # order_by: - 옵션을 넣어서 내림차순으로 정렬 한후 tag_all에 저장한다
+
     tag_all = Tag.objects.annotate(num_post=Count('post')).order_by('-num_post')
 
+    # tag가 있다면 filter()함수를 이용해서 조건에 맞게 여러행을 출력 타입은 QuerySet이다
+    # https://wayhome25.github.io/django/2017/06/20/selected_related_prefetch_related/
+
     if tag:
+        # prefetch_related: Returns a QuerySet that will automatically retrieve, in a single batch, related objects for each of the specified lookups.
+        # select_related: Returns a QuerySet that will “follow” foreign-key relationships, selecting additional related-object data when it executes its query. This is a performance booster which results in a single more complex query but means later use of foreign-key relationships won’t require database queries.
         post_list = Post.objects.filter(tag_set__name__iexact=tag) \
             .prefetch_related('tag_set', 'like_user_set__profile', 'comment_set__author__profile',
                               'author__profile__follower_user', 'author__profile__follower_user__from_user') \
             .select_related('author__profile')
+    # tag가 없다면
     else:
+        """
+        
+            sql 처리 속도 개선을 위한 코드
+            .prefetch_related: ForeignKey, OneToOneField 관계에서 활용
+            ForeignKey/OneToOneField 관계에서 Lazy하게 쿼리하지 않고, DB단에서 INNER JOIN 으로 쿼리할 수 있다.
+            
+            .select_related: ManyToManyField, ForeignKey의 reverse relation 에서 활용
+            각 관계 별로 DB 쿼리를 수행하고, 파이썬 단에서 조인을 수행한다.
+            https://wayhome25.github.io/django/2017/06/20/selected_related_prefetch_related/
+            
+        """
         post_list = Post.objects.all() \
             .prefetch_related('tag_set', 'like_user_set__profile', 'comment_set__author__profile',
                               'author__profile__follower_user', 'author__profile__follower_user__from_user', ) \
             .select_related('author__profile', )
 
+    # 댓글 폼(CommentForm) 을 forms.py 에서 comment_form에 집어넣는다
     comment_form = CommentForm()
 
+    # paginator 패키지를 이용해서 post 리스트를 3개씩 보여준다
     paginator = Paginator(post_list, 3)
-    page_num = request.POST.get('page')
+    page_num = request.POST.get('page') # 현재 페이지넘버 가져옴
 
+    # paginator를 활용해서 페이지 보여주는 코드
+    # https://cjh5414.github.io/django-pagination-%EC%82%AC%EC%9A%A9%EB%AA%A8%EB%93%88%EA%B2%B0%EC%A0%95/
     try:
-        posts = paginator.page(page_num)
+        posts = paginator.page(page_num)            # 현재 페이지 넘버 가져와서 posts 변수에 담기
     except PageNotAnInteger:
-        posts = paginator.page(1)
-    except EmptyPage:
-        posts = paginator.page(paginator.num_pages)
+        posts = paginator.page(1)                   # 페이지가 첫페이지만 있다면 1번 페이지 보여주기
+    except EmptyPage:                               # 아무것도 없다면
+        posts = paginator.page(paginator.num_pages) #
 
     if request.is_ajax():  # Ajax request 여부 확인
         return render(request, 'post/post_list_ajax.html', {
@@ -43,9 +70,15 @@ def post_list(request, tag=None):
             'comment_form': comment_form,
         })
 
+
     if request.method == 'POST':
+        # request.POST 는 키로 전송된 자료에 접근할 수 있도록 해주는 사전과 같은 객체
+        # get(): Key로 Value얻기(get)함수 post로 받은값을 'tag'을 key로 해서 값을 읽어냄
         tag = request.POST.get('tag')
-        tag_clean = ''.join(e for e in tag if e.isalnum())  # 특수문자 삭제
+        tag_clean = ''.join(e for e in tag if e.isalnum())
+        # 특수문자 삭제 isalnum 문자와 숫자의 문자열을 탐지하는 파이썬 isalnum () 방법입니다.
+        # 반환값이이 적어도 하나의 문자열이고 경우 모든 문자는 문자 또는 숫자 참, 그렇지 않으면 False를 반환
+
         return redirect('post:post_search', tag_clean)
 
     return render(request, 'post/post_list.html', {

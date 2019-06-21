@@ -4,139 +4,174 @@
 {% load static %}
 
 {% block title %}
-{% if tag %}
-#{{ tag }} - Instagram
-{% else %}
 Instagram
-{% endif %}
 {% endblock %}
 
 {% block content %}
 
+<div id="main_container">
 
-{% if follow_set %}
-<div class="search-header">
-  <h1 class="search-result-title">팔로우 목록</h1>
-</div>
-{% elif not posts and not tag %}
-<div class="search-header">
-  <h1 class="search-result-title">팔로우 중인 유저가 없습니다. 팔로우를 시작해보세요!</h1>
-</div>
-{% endif %}
+        <section class="b_inner">
 
-{% if tag %}
-<div class="search-header">
-  {% if not posts %}
-  <h1 class="search-result-title">#{{tag}}<br>태그 검색 결과가 없습니다.</h1>
-    <div class="hot-tag-list">
-    <h2 >인기 태그 리스트</h2>
-    {% for tag in tag_all|slice:":5" %}
-      <a href="/post/explore/tags/{{tag.name}}">#{{ tag.name }}</a>
-    {% endfor %}
-    </div>
-  {% else %}
-  <h1 class="search-result-title">#{{tag}} 검색결과</h1>
-  <span class="search-result-count">게시물 <span class="count">{{ posts.paginator.count|intcomma }}개 </span></span>
-  {% endif %}
-</div>
-{% endif %}
+            <div class="contents_box">
+
+                {% for post in posts %}
+                <article class="contents cont01">
+                    <header class="top">
+
+                        <a class="user-title" href="{% url "post:my_post_list" post.author.username %}">
+                            <div class="user_container">
+                                    <div class="profile_img">
+                                        {% if post.author.profile.picture %}
+                                        <img src="{{ post.author.profile.picture.url }}" alt="프로필사진">
+                                        {% else %}
+                                        <img src="{% static 'images/default/default.jpg' %}" alt="프로필사진">
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="user_name">
+                                        <div class="nick_name">{{ post.author.profile.nickname }}</div>
+                                        <div class="country">Seoul, South Korea</div>
+                                    </div>
 
 
-{% for post in posts %}
-<article class="post-wrap">
-  <header>
-    <a class="user-title" href="{% url "post:my_post_list" post.author.username %}">
-    {% if post.author.profile.picture %}
-    <img class="user-pic" src="{{ post.author.profile.picture.url }}" alt="프로필사진">
-    {% else %}
-    <img class="user-pic" src="{% static 'images/default/default.jpg' %}" alt="프로필사진">
-    {% endif %}
-    <span class="post-username">{{ post.author.profile.nickname  }}</span>
-    </a>
-    <span class="pull-right">
-      {% if user.profile in post.author.profile.get_follower %}
-      {# {% if post.author.profile in user_profile.follow_set.all %}#}
-      <input class="follow following-btn" type="submit" value="팔로잉" name="{{ post.author.profile.id }}">
-      {% else %}
-      <input class="follow follow-btn" type="submit" value="팔로우" name="{{ post.author.profile.id }}">
-      {% endif %}
-    </span>
-    {% if post.author == user %}
-    <span class=pull-right>
-      <a class="post-edit" href="{% url "post:post_edit" post.pk %}">수정</a>
-      <form class="post-delete-form" action="{% url "post:post_delete" post.pk %}" method="post">
-        {% csrf_token %}
-        <input class="post-delete" type="submit" value="삭제" onclick="return confirm('정말 삭제하시겠습니까?')">
-      </form>
-    </span>
-    {% endif %}
-  </header>
-  <img src="{{ post.photo.url }}" alt="{{ post.author }}'s photo">
-  <div class="post-content">
-    {% if user in post.like_user_set.all %}
-    <input type="button" class="like liked" name="{{ post.id }}">
-    {% else %}
-    <input type="button" class="like to-like" name="{{ post.id }}">
-    {% endif %}
-    <input type="button" class="commnet-icon" name="{{ post.id }}">
+                            </div>
+                        </a>
+                        <div class="right_icons">
+                            {% if post.author == user %}
+                            <span>
+                              <a class="post-edit" href="{% url "post:post_edit" post.pk %}">수정</a>
+                              <form class="post-delete-form" action="{% url "post:post_delete" post.pk %}" method="post">
+                                {% csrf_token %}
+                                <input class="post-delete" type="submit" value="삭제" onclick="return confirm('정말 삭제하시겠습니까?')">
+                              </form>
+                            </span>
+                            {% endif %}
 
-    <p class="like-count" id="count-{{ post.id }}">좋아요 {{ post.like_count }}개</p>
+                            <!-- 팔로우 버튼, 수정삭제버튼 클래스 기존 파일에서 가져오기 -->
+                            <span>
+                              {% if user.profile in post.author.profile.get_follower %}
+                              {# {% if post.author.profile in user_profile.follow_set.all %}#}
+                              <input class="follow following-btn" type="submit" value="팔로잉" name="{{ post.author.profile.id }}">
+                              {% else %}
+                              <input class="follow follow-btn" type="submit" value="팔로우" name="{{ post.author.profile.id }}">
+                              {% endif %}
+                            </span>
+                        </div>
 
-    <p id="like-user-{{post.id}}">
-    {% if post.like_count != 0 %}
-      {% if post.like_user_set.all %}
-      {% for like_user in post.like_user_set.all %}
-      {{ like_user.profile.nickname }}
-      {% endfor %}
-      님이 좋아합니다.
-      {% endif %}
-    {% endif %}
-    </p>
+                    </header>
 
-    <span class="post-username">{{ post.author.profile.nickname }}</span>
-    <span>{{ post|add_link|safe|linebreaksbr }}</span>
+                    <div class="img_section">
+                        <div class="trans_inner">
+                            <div><img src="{{ post.photo.url }}" alt="{{ post.author }}'s photo"></div>
+                        </div>
+                    </div>
+
+                    <div class="bottom_icons">
+                        <div class="left_icons">
+                            <div class="heart_btn">
+                                <div class="sprite_heart_icon_outline" data-name="heartbeat"></div>
+                            </div>
+                            <div>
+                                <div class="sprite_bubble_icon"></div>
+                            </div>
+                            <div>
+                                <div class="sprite_share_icon"></div>
+                            </div>
+                        </div>
+
+                        <div class="right_icon">
+                            <div class="sprite_bookmark_outline"></div>
+                        </div>
+                    </div>
+
+                    <div class="count_likes">
+                        좋아요
+                        <span class="count">2,351</span>
+                        개
+                    </div>
+
+                    <div class="commet_container">
+
+                        <div class="commet">
+                            <div class="nick_name">
+                                popo213
+                            </div>
+                            <div>
+                                우와...너무 축하해...!!!
+                            </div>
+                        </div>
+
+                        <div class="small_heart">
+                            <div class="sprite_small_heart_icon_outline"></div>
+                        </div>
+
+                    </div>
+
+                    <div class="timer">1시간 전</div>
+
+                    <div class="commit_field">
+                        <input type="text" placeholder="댓글달기..">
+
+                        <div class="upload_btn">게시</div>
+                    </div>
 
 
+                </article>
+            {% endfor %}
+
+            </div>
+
+            <div class="side_box">
+                <div class="user_profile">
+                    <div class="profile_thumb">
+                        <img src="imgs/thumb.png" alt="">
+                    </div>
+                    <div class="detail">
+                        <div class="id">kind_tigerrrr</div>
+                        <div class="ko_id">심선범</div>
+                    </div>
+                </div>
+
+                <article class="story_box">
+                    <header class="story_header">
+                        <div>스토리</div>
+                        <div class="more">모두 보기</div>
+                    </header>
+
+                    <div class="scroll_inner">
+                        <div class="thumb_user">
+                            <div class="profile_thumb">
+
+                                <img src="{% static 'images/default/default.jpg' %}" alt="프로필사진">
+
+                            </div>
+                            <div class="detail">
+                                <div class="id">kind_tigerrrr</div>
+                                <div class="timer">1시간 전</div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="recommend">
+                    <header class="recommend_header">
+                        <div>회원님을 위한 추천</div>
+                        <div class="more">모두 보기</div>
+                    </header>
+
+                    <div class="thumb_user">
+                        <div class="profile_thumb">
+                            <img src="imgs/thumb02.jpg" alt="">
+                        </div>
+                        <div class="detail">
+                            <div class="id">kind_tigerrrr</div>
+                            <div class="timer">1시간 전</div>
+                        </div>
+                    </div>
+
+                </article>
+            </div>
 
 
-    {% if post.comment_set.all.count > 4 %}
-    <input type="button" class="comment-more" name="{{ post.id }}" value="댓글 더 보기">
-    {% endif %}
-    <div id="comment-list-ajax-post{{post.id}}"></div>
-    {% for comment in post.comment_set.all|slice:":4" %}
-    <div id="comment{{ comment.id }}">
-
-      <span class="comment-username">{{ comment.author.profile.nickname }}</span> {{ comment.content }}
-      {% if user == comment.author %}
-      <input type="button" class="del-comment" value="삭제" name="{{ comment.id }}">
-      {% endif %}
-
-    </div>
-    {% endfor %}
-    <div id="comment-more-{{post.id}}"></div>
-
-    <div class="time">
-    {{ post.created_at|naturaltime }}
-    </div>
-    <div id="add-comment-post{{post.id}}" class="add-comment-wrap">
-    {% if user.is_authenticated %}
-      {{ comment_form }}
-      <input type="button" class="add-comment add-comment-btn" name="{{ post.id }}" value="게시">
-    {% else %}
-      {{ comment_form }}
-      <input type="button" class="add-comment-btn" name="{{ post.id }}" value="게시" onclick="alert('댓글을 작성하려면 로그인이 필요합니다.')">
-    {% endif %}
-    </div>
-  </div>
-  </article>
-  {% endfor %}
-
-  <div id="post_list_ajax"></div>
-  <input id="page" type="hidden" value="2">
-
-  {% if posts.paginator.count > 4 %}
-  <button id="callmorepost" type="button">More Post</button>
-  {% endif %}
-
-  {% include "post/script_ajax.html" %}
   {% endblock %}

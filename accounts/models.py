@@ -137,6 +137,7 @@ def user_path(instance, filename):
     ManyToManyField: 다대다 관계
     
     models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    >> 서로 관계된 모델들 중 어느 곳에 ManyToManyField 를 선언하든 상관이 없지만 반드시 한 모델에만 선언해야하며, 의미적으로 자연스러운 관계가 되도록 선언해주는 것을 권장한다.
     >> models.OneToOneField(settings.AUTH_USER_MODEL,: auth.User 모듈과 유일무이한 1대1의 관계를 가지는 user모듈을 만든다
     >> on_delete=models.CASCADE : 사용자가 삭제되면 함께 삭제되는 관계를 설정
     
@@ -166,10 +167,12 @@ class Profile(models.Model):
 
     # 사용되징 않는것 처럼 보였으나
     # Many-to-Many 관계를 중계하는 역할을 하기 위해 보이지 않는 모델 생성
-    follow_set = models.ManyToManyField('self',                         # 자신 모델을 다대다 필드로 가진다
+    # [개선점] ManyToManyField 필드의 필드이름은 복수형으로 설정하는 것을 권장한다.follow_set -> profiles 요렇게 하는게 더 좋은 방법
+    follow_set = models.ManyToManyField('self',                         # 나 자신의 Profile 모델과 다른 사람의 Profile모델이 연결되는 것이므로 구조가 같아서 'self'를 사용한다
                                         blank=True,                     # 없어도 되는값, 관계가 없으면 아무런 값이 없을수도 있으니 설정
-                                        through='Relation',             # many-to-many 중간 모델을 Relation으로 정의
+                                        through='Relation',             # many-to-many 중개모델을 Relation 모델 으로 정의
                                         symmetrical=False, )            # 비대칭 관계로 적용, 친구를 추가한 쪽에서만 친구관계가 될경우 비대칭
+                                                                        # 중개 모델을 직접 생성하여 재귀적 다대다 관계를 설정할 경우 symmetrical=False옵션을 꼭 넣어야함
 
     picture = ProcessedImageField(upload_to=user_path,                  # 저장위치와 처리과정이 들어있는 user_path
                                   processors=[ResizeToFill(150, 150)],  # ResizeToFill 메소드로 사이즈 변경
@@ -190,6 +193,7 @@ class Profile(models.Model):
                               default='N')                              # 기본값을 N으로 설정
 
     #[보강요망] __str__ 문자열 화 함수 : 인스턴트 자체를 출력할 때의 형식을 지정해주는 함수 // 오지랖 책 보고 설명 보강
+    # __str__관리자 화면이나 쉘에서 객체를 출력할 때 나타날 내용을 결정합니다
     def __str__(self):
         return self.nickname
 
@@ -204,9 +208,12 @@ class Profile(models.Model):
 
     @property                                                       # 나를 펄로우한 유저를 for 반복문으로 돌려서 전부 불러와서 담는다
     def get_follower(self):
-        return [i.from_user for i in self.follower_user.all()]
+        return [i.from_user for i in self.follower_user.all()]      # i = relation i.from_user i중에 from_user를 가져와서 그중에서 to_uer가 1인 즉 나인 relations을 반복문으로 해서 하나씩 가져온다 유저를 전부 가져와서
 
-    @property                                                       # 내가 펄로우한 유저를 for 반복문으로 돌려서 전체 리스트를 불러와서 배열을 담는다
+    # self는 profile self.follower_user.all() 홍길동이라는 사람의 to_user_id 가 홍길동의 프로필 아이디를 가리키고 있는 relations 들
+    # i.from_user의 값들만 가져온다
+
+    @property                                                       # 내가 펄로우한 유저를 for 반복문으로 돌려서 전체 리스트를 불러와서 배열에 담는다
     def get_following(self):
         return [i.to_user for i in self.follow_user.all()]
 
@@ -227,12 +234,28 @@ class Profile(models.Model):
 
     name: Relation
     기능: 회원들과의 관계를 보여주는 모델
+    Profile과 Profile 회원과 회원 사이의 관계를 보여주는 중개 모델 (intermediary model)
+    
     (models.Model) : 항상 Model 클래스를 상속받는다, pk 는 자동으로 생성
     
+    중개모델의 제약조건
+    중개 모델에는 다대다 관계의 소스모델(Source model)과 타겟모델(Target model)을 참조하는 외래키가 반드시 각각 하나씩 있어야 한다.
+
+        소스모델은 ManyToManyField 필드가 있는 모델을 말한다.
+        타겟모델은 ManyToManyField 에 인자로 전달되는 모델을 말한다.
+
+
+    
 """
+
+# [개선점] Profile_relations으로 변경하고 self를 profile로 변경하면 좀더 관계가 명확해질것 같
+
+
 class Relation(models.Model):
+    #  내가 구독한 사람의 related_name 을 지정하면 나를
+    # profile.follow_user.all from_user가 1인 즉 나를 펄로우 하는 사람을 불러오게
     from_user = models.ForeignKey(Profile,                          # 외래키를 Profile로 설정
-                                  related_name='follow_user',       # Be careful with related_name에서 정의한 쿼리인 related_name 은 유일해야한다 나중에 검색하기 위한 태그
+                                  related_name='follow_user',       # Be careful with related_name에서 정의한 쿼리인 related_name 은 유일해야한다 나중에 검색하기 위한 태그  //
                                   on_delete=models.CASCADE)         # Profile이 삭제되면 함께 삭제됨
     to_user = models.ForeignKey(Profile,                            # 외래키를 Profile로 설정
                                 related_name='follower_user',       # Be careful with related_name에서 정의한 쿼리인 related_name 은 유일해야한다 나중에 검색하기 위한 태그

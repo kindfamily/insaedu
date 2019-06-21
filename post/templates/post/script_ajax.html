@@ -108,7 +108,6 @@
     });
   });
 
-
 ///////////////// 댓글삭제 Ajax /////////////////
   $(document).on('click', '.del-comment', function(){
     var pk = $(this).attr('name');
@@ -163,6 +162,7 @@
 
 
 ///////////////// 무한 스크롤 Ajax /////////////////
+  // 클릭했을때 작동하게 하는 코드 > 삭제해도 될듯 > 빙글빙글 돌도록 하는 코드로 변환
   $('#callmorepost').click(function(){
     var page = $("#page").val();
     var end_page = {{ posts.paginator.num_pages }};
@@ -171,8 +171,10 @@
     }
     callMorePostAjax(page);
     $("#page").val(parseInt(page)+1);
+    <!-- parseInt 정수로 변환해주는 함수 templeat의 value 값이 2인데 +1을 해서 3개씩 보여줌-->
   });
 
+  // 스크롤 움직임에 따라서 더 불러올지 체크하는 코드
   $(window).scroll(function(){
     var scrollHeight = $(window).scrollTop() + $(window).height();
     var documentHeight = $(document).height();
@@ -184,33 +186,39 @@
     if (scrollHeight  >= documentHeight){
       var page = $("#page").val();
       var end_page = {{ posts.paginator.num_pages }};
+      // 더이상 없다면 아무것도 넘기지 않기
       if(page > end_page){
         return;
       }
+      // 페이지가 있다면 callMorePistAjax 함수 호출해서 3개 post 보여주기
       callMorePostAjax(page);
       $("#page").val(parseInt(page)+1);
     }
   });
 
+  // callMorePostAjax 함수 정의
   function callMorePostAjax(page) {
+    // 마지막 페이지 넘버 불러와서 end_page 변수에 넣기
     var end_page = {{ posts.paginator.num_pages }};
+    // 마지막 페이지면 아무것도 안뿌리기
     if(page > end_page){
       return;
     }
+    // ajax 코드
     $.ajax({
       type : 'POST',
       {% if tag %}
-      url: "{% url 'post:post_search' tag %}", // tag 여부에 따라서 분기처리
+      url: "{% url 'post:post_search' tag %}", // [검색한 태그 포스트만 보여줄때] tag 여부에 따라서 분기처리
       {% elif follow_set %}
-      url: "{% url 'post:follow_post_list' %}", // view에서 넘겨준 follow_set 여부에 따라서 분기처리
+      url: "{% url 'post:follow_post_list' %}", // [펄로우한 사람만 보여줄때] view에서 넘겨준 follow_set 여부에 따라서 분기처리
       {% else %}
-      url: "{% url 'post:post_list' %}",
+      url: "{% url 'post:post_list' %}", // 아무 조건이 없다면 전체 post 리스트 보여주기
       {% endif %}
       data: {
         'page': page,
         'csrfmiddlewaretoken': '{{ csrf_token }}'
       },
-      success: addMorePostAjax,
+      success: addMorePostAjax, // 성공했을때 실행할 값을 보낼 함수 지정
       dataType: 'html',
       error: function(request, status, error){
         alert('오류발생');
@@ -218,6 +226,11 @@
       },
     });
   }
+
+  // textStatus는 단순한 String 값으로 sucess 가 들어있었다.
+  // jqXHR은 jQuery HTTP Request 라는 건데,
+  // data와 거의 비슷한 값을 지니고 있는데 추가적으로 통신 status 와 readyStatus 등을 더 보내준다.
+  // 예를들어 status 는 200으로 통신 성공에 대한 응답 값이 있었다.
 
   function addMorePostAjax(data, textStatus, jqXHR) {
     $('#post_list_ajax').append(data);
